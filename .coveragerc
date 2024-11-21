@@ -1,0 +1,7 @@
+[run]
+source = imec_web
+
+[report]
+show_missing = True
+skip_covered = True
+include = api/views.py

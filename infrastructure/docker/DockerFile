@@ -1,0 +1,37 @@
+# syntax=docker/dockerfile:1
+FROM python:3.10
+ENV PYTHONUNBUFFERED=1
+ENV WAIT_VERSION 2.7.2
+ADD https://github.com/ufoscout/docker-compose-wait/releases/download/$WAIT_VERSION/wait /wait
+RUN chmod +x /wait
+
+RUN apt-get update && apt-get install nginx redis-server -y --no-install-recommends
+
+RUN pip install --upgrade pip
+RUN pip install uwsgi
+RUN pip install virtualenv
+RUN pip install supervisor
+
+COPY nginx-app.conf /etc/nginx/sites-available/default
+COPY uwsgi_params /home/docker/code/uwsgi_params
+COPY nginx-app.conf /etc/nginx/
+
+COPY ../../supervisord.conf /etc/supervisord.conf
+
+COPY requirements.txt /home/docker/code/
+RUN pip install -r /home/docker/code/requirements.txt
+
+COPY . /home/docker/code/
+WORKDIR /home/docker/code/
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV PYTHONPATH=/home/docker/code/tasks/helpers
+
+CMD ["nginx", "-g", "daemon off;"]
+
+STOPSIGNAL SIGQUIT
+STOPSIGNAL SIGTERM
+
+EXPOSE 8002
+RUN chmod +x  /home/docker/code/infrastructure/docker/entrypoint.sh
+ENTRYPOINT ["bash","/home/docker/code/infrastructure/docker/entrypoint.sh"]

@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_PASSWORD: root
+      POSTGRES_USER: django
+    volumes:
+      - .db:/var/lib/postgresql/data
+    cap_add:
+      - SYS_NICE
+
+  redis:
+    image: "redis:latest"
+    ports:
+      - "6379:6379"
+
+  python:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/DockerFile
+    environment:
+      APP_ENV: dev
+      DB_PASSWORD: root
+      DB_NAME: postgres
+      DB_USER: django
+      DB_HOST: db
+      DB_PORT: "5432"
+      CELERY_BROKER_URL: 'redis://redis:6379/0'
+      CELERY_RESULT_BACKEND: 'redis://redis:6379/0'
+    volumes:
+      - .:/home/docker/code/
+    ports:
+      - "8002:8002"
+    depends_on:
+      - db
+      - redis
+
